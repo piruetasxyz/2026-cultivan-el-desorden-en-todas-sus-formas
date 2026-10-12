@@ -16,6 +16,8 @@ import re
 import socket
 import sys
 import threading
+import time
+from collections import defaultdict, deque
 
 import qrcode
 from flask import Flask, Response, jsonify, request, send_from_directory
@@ -25,6 +27,11 @@ import impresora
 
 PUERTO = 5050
 LARGO_MAXIMO = 250  # caracteres por mensaje
+
+# Limite de mensajes por telefono, identificado por su IP en la red local.
+# Los contadores viven en memoria: se reinician al reiniciar el servidor.
+MENSAJES_POR_VENTANA = 5
+VENTANA_SEGUNDOS = 60 * 60
 
 # Space Mono, incluida en el repo (licencia OFL, ver fuentes/SpaceMono/OFL.txt).
 FUENTES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "fuentes", "SpaceMono")
@@ -47,6 +54,7 @@ ALTO_TEXTO_PX = LINEAS_FIJAS * int(TAMANO_TEXTO * INTERLINEADO)
 
 app = Flask(__name__)
 candado_impresion = threading.Lock()
+envios_por_ip: dict[str, deque[float]] = defaultdict(deque)
 
 PAGINA = """<!doctype html>
 <html lang="es">
@@ -94,7 +102,7 @@ PAGINA = """<!doctype html>
     color: white;
   }
   button:disabled { background: #8888; }
-  #estado { min-height: 1.5rem; margin-top: 1rem; }
+  #estado:not(:empty) { margin-top: 1rem; }
 </style>
 </head>
 <body>
@@ -115,12 +123,9 @@ texto.addEventListener('input', () => {
 });
 
 async function enviar() {
-  if (!texto.value.trim()) {
-    estado.textContent = 'Escribe algo primero.';
-    return;
-  }
+  if (!texto.value.trim()) return;
   boton.disabled = true;
-  estado.textContent = 'Imprimiendo...';
+  estado.textContent = '';
   try {
     const res = await fetch('/imprimir', {
       method: 'POST',
@@ -129,11 +134,10 @@ async function enviar() {
     });
     const datos = await res.json();
     if (datos.ok) {
-      estado.textContent = 'Listo, ya se imprimio.';
       texto.value = '';
       contador.textContent = '0 / __LARGO_MAXIMO__';
     } else {
-      estado.textContent = 'Error: ' + datos.error;
+      estado.textContent = datos.error;
     }
   } catch (err) {
     estado.textContent = 'Error de conexion: ' + err;
@@ -257,12 +261,28 @@ def imprimir():
     if len(texto) > LARGO_MAXIMO:
         return jsonify(ok=False, error=f"Maximo {LARGO_MAXIMO} caracteres."), 400
 
-    # Si hay varias personas enviando a la vez, se imprimen de a una.
+    # Si hay varias personas enviando a la vez, se imprimen de a una. El
+    # limite por telefono se revisa dentro del candado para que dos envios
+    # simultaneos del mismo telefono no se salten el conteo.
     with candado_impresion:
+        ip = request.remote_addr or "desconocida"
+        ahora = time.time()
+        envios = envios_por_ip[ip]
+        while envios and ahora - envios[0] >= VENTANA_SEGUNDOS:
+            envios.popleft()
+        if len(envios) >= MENSAJES_POR_VENTANA:
+            minutos = math.ceil((envios[0] + VENTANA_SEGUNDOS - ahora) / 60)
+            return jsonify(ok=False, error=(
+                f"Llegaste al maximo de {MENSAJES_POR_VENTANA} mensajes por hora. "
+                f"Puedes volver a escribir en {minutos} min."
+            )), 429
+
         try:
             impresora.imprimir_imagen(renderizar_texto(texto))
         except impresora.ErrorImpresora as e:
             return jsonify(ok=False, error=str(e)), 500
+        # Solo cuenta si se imprimio: un error de la impresora no gasta cupo.
+        envios.append(ahora)
     print(f"Impreso: {texto!r}")
     return jsonify(ok=True)
 

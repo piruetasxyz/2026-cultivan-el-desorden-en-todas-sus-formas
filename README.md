@@ -152,4 +152,5 @@ Con el entorno virtual de la sección anterior ya creado:
 - La primera vez, macOS puede preguntar si se permiten conexiones entrantes para Python: hay que aceptar.
 - Algunas redes (universidades, cafés, eventos) aíslan a los dispositivos entre sí y el teléfono no puede llegar al computador. En ese caso, usar un router propio o el hotspot del teléfono.
 - El texto se imprime como imagen, así que acentos y ñ funcionan. Los emojis no se ven.
+- Máximo 5 mensajes por teléfono por hora (`MENSAJES_POR_VENTANA` y `VENTANA_SEGUNDOS` en [nuevo/servidor.py](nuevo/servidor.py)). Cada teléfono se identifica por su IP en la red local. Los contadores se reinician al reiniciar el servidor. Si la IP de un teléfono cambia (por ejemplo, al desconectarse y volver a conectarse al Wi-Fi), empieza con el cupo completo.
 - Máximo 250 caracteres por mensaje (`LARGO_MAXIMO` en [nuevo/servidor.py](nuevo/servidor.py)). Al cambiarlo, el largo de todos los recibos se ajusta solo.
