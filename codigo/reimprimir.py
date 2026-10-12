@@ -4,10 +4,10 @@ Lista y reimprime mensajes del archivo (archivo/mensajes.jsonl), con el
 mismo formato que los recibos originales.
 
 Uso:
-    .venv/bin/python nuevo/reimprimir.py                # lista todos, numerados
-    .venv/bin/python nuevo/reimprimir.py 3 7 12         # reimprime esos numeros
-    .venv/bin/python nuevo/reimprimir.py --ultimos 5    # reimprime los ultimos 5
-    .venv/bin/python nuevo/reimprimir.py --todos        # reimprime todos
+    .venv/bin/python codigo/reimprimir.py                # lista todos, numerados
+    .venv/bin/python codigo/reimprimir.py 3 7 12         # reimprime esos numeros
+    .venv/bin/python codigo/reimprimir.py --ultimos 5    # reimprime los ultimos 5
+    .venv/bin/python codigo/reimprimir.py --todos        # reimprime todos
 
 Ojo: si el servidor esta imprimiendo justo en ese momento, la impresora
 puede responder "Access denied". En ese caso, esperar y volver a correrlo.

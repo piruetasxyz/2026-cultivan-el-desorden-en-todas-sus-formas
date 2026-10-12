@@ -17,7 +17,7 @@ ID_VENDOR = 0x0483
 ID_PRODUCTO = 0x5743
 
 # La impresora esta configurada para 80mm (576 dots) y el rollo es de 58mm.
-# Calibrado con antiguo/calibrar_ancho.py: el papel cubre aprox. de 48 a
+# Calibrado con codigo/calibrar_ancho.py: el papel cubre aprox. de 48 a
 # 462 dots, asi que con 64 de margen la imagen de 384 px queda centrada.
 ANCHO_CABEZAL_PX = 576
 ANCHO_PAPEL_PX = int(os.environ.get("ANCHO_PAPEL_PX", "384"))
@@ -28,11 +28,13 @@ class ErrorImpresora(Exception):
     """Error al comunicarse con la impresora USB."""
 
 
-def agregar_margen(imagen: Image.Image, margen_px: int = MARGEN_IZQUIERDO_PX) -> Image.Image:
+def agregar_margen(imagen: Image.Image, margen_px: int | None = None) -> Image.Image:
     """Pega la imagen a `margen_px` del borde izquierdo de un lienzo blanco
     del ancho completo del cabezal. Siempre se envia el ancho completo
     porque la impresora no alinea a la izquierda las imagenes mas angostas
     (las corre hacia la derecha), igual que la regla de calibracion."""
+    if margen_px is None:
+        margen_px = MARGEN_IZQUIERDO_PX
     con_margen = Image.new("RGB", (ANCHO_CABEZAL_PX, imagen.height), "white")
     con_margen.paste(imagen.convert("RGB"), (margen_px, 0))
     return con_margen

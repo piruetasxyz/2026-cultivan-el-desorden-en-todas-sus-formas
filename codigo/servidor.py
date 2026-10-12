@@ -4,8 +4,8 @@ Servidor web para la red local: las personas escanean un QR con su
 telefono, escriben un texto y se imprime en la impresora termica.
 
 Uso:
-    .venv/bin/python nuevo/servidor.py            # imprime el QR al iniciar
-    .venv/bin/python nuevo/servidor.py --sin-qr   # no imprime el QR
+    .venv/bin/python codigo/servidor.py            # imprime el QR al iniciar
+    .venv/bin/python codigo/servidor.py --sin-qr   # no imprime el QR
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ PUERTO = 5050
 LARGO_MAXIMO = 250  # caracteres por mensaje
 
 # Archivo de todos los mensajes impresos, para el registro y para poder
-# reimprimirlos con nuevo/reimprimir.py. Una linea JSON por mensaje.
+# reimprimirlos con codigo/reimprimir.py. Una linea JSON por mensaje.
 ARCHIVO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "archivo", "mensajes.jsonl")
 
 # Limite de mensajes por telefono, identificado por su IP en la red local.

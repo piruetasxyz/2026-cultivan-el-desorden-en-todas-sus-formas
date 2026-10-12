@@ -6,10 +6,10 @@ los recibos impresos. El texto queda vectorial: nitido, buscable y
 copiable.
 
 Uso:
-    .venv/bin/python nuevo/exportar_pdf.py                  # todos
-    .venv/bin/python nuevo/exportar_pdf.py 3 7 12           # solo esos numeros
-    .venv/bin/python nuevo/exportar_pdf.py --ultimos 10     # los ultimos 10
-    .venv/bin/python nuevo/exportar_pdf.py --salida otro.pdf
+    .venv/bin/python codigo/exportar_pdf.py                  # todos
+    .venv/bin/python codigo/exportar_pdf.py 3 7 12           # solo esos numeros
+    .venv/bin/python codigo/exportar_pdf.py --ultimos 10     # los ultimos 10
+    .venv/bin/python codigo/exportar_pdf.py --salida otro.pdf
 """
 
 import argparse

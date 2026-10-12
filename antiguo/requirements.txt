@@ -1,5 +1,0 @@
-flask
-playwright
-pillow
-python-escpos
-pyusb
