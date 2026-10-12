@@ -118,6 +118,8 @@ Todos los recibos miden lo mismo (aprox. 6 cm): el alto alcanza para un mensaje 
 | Archivo | Qué hace |
 | --- | --- |
 | [nuevo/servidor.py](nuevo/servidor.py) | Servidor web en el puerto **5050**, accesible desde la red local. Al iniciar imprime el QR. |
+| [nuevo/reimprimir.py](nuevo/reimprimir.py) | Lista y reimprime mensajes del archivo. |
+| [nuevo/exportar_pdf.py](nuevo/exportar_pdf.py) | Exporta mensajes del archivo a PDF, con el mismo aspecto que los recibos. |
 | [nuevo/impresora.py](nuevo/impresora.py) | Envía imágenes a la impresora por USB, con el margen para rollo de 58 mm. |
 | [nuevo/requirements.txt](nuevo/requirements.txt) | Dependencias de Python. |
 | [fuentes/SpaceMono/](fuentes/SpaceMono/) | Tipografía Space Mono (licencia SIL Open Font License, ver `OFL.txt`). Se usa en los recibos y en la página web. |
@@ -143,6 +145,28 @@ Con el entorno virtual de la sección anterior ya creado:
 
 3. Escanear el QR con un teléfono **conectado a la misma red Wi-Fi**, escribir un mensaje y apretar "Imprimir".
 4. Para detener el servidor: `Ctrl + C` en la terminal.
+
+### Archivo y reimpresión
+
+Cada mensaje impreso se guarda en `archivo/mensajes.jsonl` (una línea por mensaje, con fecha y texto). No se guarda la IP ni ningún dato del teléfono. La carpeta `archivo/` está en `.gitignore`: los mensajes del público no se suben al repositorio. Conviene respaldarla aparte.
+
+```sh
+.venv/bin/python nuevo/reimprimir.py                # lista todos los mensajes, numerados
+.venv/bin/python nuevo/reimprimir.py 3 7 12         # reimprime los mensajes 3, 7 y 12
+.venv/bin/python nuevo/reimprimir.py --ultimos 5    # reimprime los últimos 5
+.venv/bin/python nuevo/reimprimir.py --todos        # reimprime todos
+```
+
+Para exportar a PDF (una página por recibo, de 48 × 61 mm, con la misma tipografía y los mismos cortes de línea que el papel; el texto queda vectorial, así que se puede buscar y copiar):
+
+```sh
+.venv/bin/python nuevo/exportar_pdf.py                  # todos → archivo/mensajes.pdf
+.venv/bin/python nuevo/exportar_pdf.py 3 7 12           # solo esos números
+.venv/bin/python nuevo/exportar_pdf.py --ultimos 10     # los últimos 10
+.venv/bin/python nuevo/exportar_pdf.py --salida otro.pdf
+```
+
+Antes de imprimir más de 3 recibos pide confirmación. Se puede reimprimir con el servidor funcionando, pero si justo coincide con una impresión del público la impresora puede responder "Access denied": basta con esperar y volver a correrlo.
 
 ### Notas
 

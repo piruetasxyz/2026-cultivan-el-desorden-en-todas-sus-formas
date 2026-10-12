@@ -10,6 +10,7 @@ Uso:
 
 from __future__ import annotations
 
+import json
 import math
 import os
 import re
@@ -18,6 +19,7 @@ import sys
 import threading
 import time
 from collections import defaultdict, deque
+from datetime import datetime
 
 import qrcode
 from flask import Flask, Response, jsonify, request, send_from_directory
@@ -27,6 +29,10 @@ import impresora
 
 PUERTO = 5050
 LARGO_MAXIMO = 250  # caracteres por mensaje
+
+# Archivo de todos los mensajes impresos, para el registro y para poder
+# reimprimirlos con nuevo/reimprimir.py. Una linea JSON por mensaje.
+ARCHIVO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "archivo", "mensajes.jsonl")
 
 # Limite de mensajes por telefono, identificado por su IP en la red local.
 # Los contadores viven en memoria: se reinician al reiniciar el servidor.
@@ -150,6 +156,20 @@ async function enviar() {
 """.replace("__LARGO_MAXIMO__", str(LARGO_MAXIMO))
 
 
+def guardar_en_archivo(texto: str) -> None:
+    os.makedirs(os.path.dirname(ARCHIVO_PATH), exist_ok=True)
+    registro = {"fecha": datetime.now().isoformat(timespec="seconds"), "texto": texto}
+    with open(ARCHIVO_PATH, "a", encoding="utf-8") as f:
+        f.write(json.dumps(registro, ensure_ascii=False) + "\n")
+
+
+def leer_archivo() -> list[dict]:
+    if not os.path.exists(ARCHIVO_PATH):
+        return []
+    with open(ARCHIVO_PATH, encoding="utf-8") as f:
+        return [json.loads(linea) for linea in f if linea.strip()]
+
+
 def obtener_ip_local() -> str:
     """IP de este computador en la red local. Se puede fijar con la variable
     de entorno IP_SERVIDOR (util en redes sin internet, donde la deteccion
@@ -193,10 +213,11 @@ def partir_en_lineas(texto: str, fuente: ImageFont.FreeTypeFont, ancho_max: int)
     return lineas
 
 
-def renderizar_texto(texto: str) -> Image.Image:
-    """Recibo de alto fijo. Si el texto no cabe (por ejemplo, con muchos
-    saltos de linea) se achica la letra; si aun asi no cabe con el tamano
-    minimo, se cortan las lineas que sobran."""
+def componer_texto(texto: str) -> tuple[ImageFont.FreeTypeFont, int, list[str]]:
+    """Decide tamano de letra, interlineado y lineas de un recibo de alto
+    fijo. Si el texto no cabe (por ejemplo, con muchos saltos de linea) se
+    achica la letra; si aun asi no cabe con el tamano minimo, se cortan las
+    lineas que sobran. Lo usan tanto la impresora como el PDF."""
     ancho = impresora.ANCHO_PAPEL_PX
     texto = re.sub(r"\n{3,}", "\n\n", texto)
 
@@ -208,10 +229,15 @@ def renderizar_texto(texto: str) -> Image.Image:
         if len(lineas) * alto_linea <= ALTO_TEXTO_PX or tamano <= TAMANO_TEXTO_MINIMO:
             break
         tamano -= 1
-    lineas = lineas[:ALTO_TEXTO_PX // alto_linea]
+    return fuente, alto_linea, lineas[:ALTO_TEXTO_PX // alto_linea]
 
-    alto = PADDING + ALTO_TEXTO_PX + PADDING
-    imagen = Image.new("RGB", (ancho, alto), "white")
+
+ALTO_RECIBO_PX = PADDING + ALTO_TEXTO_PX + PADDING
+
+
+def renderizar_texto(texto: str) -> Image.Image:
+    fuente, alto_linea, lineas = componer_texto(texto)
+    imagen = Image.new("RGB", (impresora.ANCHO_PAPEL_PX, ALTO_RECIBO_PX), "white")
     dibujo = ImageDraw.Draw(imagen)
     for i, linea in enumerate(lineas):
         dibujo.text((PADDING, PADDING + i * alto_linea), linea, font=fuente, fill="black")
@@ -283,6 +309,7 @@ def imprimir():
             return jsonify(ok=False, error=str(e)), 500
         # Solo cuenta si se imprimio: un error de la impresora no gasta cupo.
         envios.append(ahora)
+        guardar_en_archivo(texto)
     print(f"Impreso: {texto!r}")
     return jsonify(ok=True)
 
